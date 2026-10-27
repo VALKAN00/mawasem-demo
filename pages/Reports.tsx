@@ -1,61 +1,147 @@
-// @ts-nocheck
-// Generated from v2/Reports.dc.html (Factory Traceability UI · Simplified v2). Design unchanged.
-import React from 'react';
-import { DCLogic, dcCss, dcHref, dcStr, dcTxt, dcNoop } from '../lib/dc';
+import React, { useState } from 'react';
+import { Shell } from '../lib/Shell';
+import { useApp, l, L } from '../lib/app';
+import { useStore, useNames, rawSummary } from '../lib/store';
 
-export const title = "Reports";
+export const title = 'Reports';
 
-const STYLE = "\nbody{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#1B2420;background:#F6F7F5}\na{color:#1F6B4F}a:hover{color:#14503A}\n.nv{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 14px;border-radius:10px;color:#3C4742;text-decoration:none;font-size:15px;font-weight:500}\n.nv:hover{background:#F1F3F0;color:#1B2420}\n.nv.on{background:#1F6B4F;color:#FFFFFF}\n.card{background:#FFFFFF;border:1px solid #E3E6E1;border-radius:14px}\n.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:10px;border:1px solid #CBD2CC;background:#FFFFFF;color:#1B2420;font:inherit;font-size:15px;font-weight:500;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}\n.btn:hover{background:#F1F3F0;color:#1B2420}\n.mono{font-family:'IBM Plex Mono',monospace}\n.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}\n.ok{background:#E6F0EA;color:#14503A}.bad{background:#FDECEA;color:#A41E14}.mute{background:#EEF0ED;color:#3C4742}\n.tab{min-height:48px;padding:0 4px;margin-right:24px;border:0;border-bottom:3px solid transparent;background:transparent;font:inherit;font-size:15px;font-weight:500;color:#5C6862;cursor:pointer}\n.tab.on{color:#14503A;border-bottom-color:#1F6B4F;font-weight:600}\n.rw{display:flex;align-items:center;min-height:54px;border-top:1px solid #EEF0ED;font-size:15px;text-decoration:none;color:#1B2420}\na.rw:hover{background:#F8FAF8;color:#1B2420}\n.rh{display:flex;align-items:center;min-height:40px;background:#FAFBFA;font-size:12px;font-weight:500;color:#5C6862}\n.c{flex:1 1 0;min-width:100px;padding:8px 14px;box-sizing:border-box}\n.w2{flex:1.6 1 0;min-width:170px}\n.r{text-align:right;font-variant-numeric:tabular-nums}\n.neg{color:#A41E14;font-weight:600}.pos{color:#14503A;font-weight:600}\n.big{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}\n";
+type Tab = 'stock' | 'yield' | 'sup' | 'mass' | 'audit';
+const fmt = (n: number) => Number(n).toLocaleString('en-US');
+const pct = (v: number) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + '%';
 
-class Component extends DCLogic {
-scanVals() {
-const raw = (this.state && this.state.scanQ) || '';
-const q = String(raw).trim().toUpperCase();
-const prods = { MNT: 'Mint', HIB: 'Hibiscus', CHM: 'Chamomile' };
-const codes = ['RM-HIB-261022-01', 'RM-HIB-261021-02', 'RM-MNT-261021-03', 'RM-HIB-261019-04', 'RM-HIB-261018-05', 'RM-CHM-261019-01', 'RM-HIB-261017-02', 'RM-MNT-261020-01', 'RM-HIB-261020-01', 'RM-HIB-261020-02',
-'PB-HIB-261022-01', 'PB-HIB-261021-01', 'PB-CHM-261022-01', 'PB-MNT-261021-01', 'PB-MNT-261021-02', 'PB-HIB-261019-01',
-'FG-MNT-261022-01', 'FG-HIB-261019-02', 'FG-CHM-261018-01', 'FG-MNT-261014-02', 'FG-MNT-261010-01', 'FG-HIB-261012-02', 'FG-CHM-261019-03', 'FG-CHM-261015-02', 'FG-HIB-261019-03', 'FG-HIB-261016-01',
-'BL-MNT-261023-01', 'SH-261025-01', 'SH-261028-02'];
-const pages = { RM: 'Lot.dc.html', PB: 'LotBatch.dc.html', FG: 'LotFinished.dc.html', BL: 'LotBlend.dc.html', SH: 'Shipments.dc.html' };
-const kinds = { RM: 'raw lot', PB: 'batch', FG: 'finished lot', BL: 'blend', SH: 'shipment' };
-const pc = prods[q] ? q : (q.length >= 3 ? Object.keys(prods).find((k) => prods[k].toUpperCase().indexOf(q) === 0) : undefined);
-const found = pc ? codes.filter((c) => c.split('-')[1] === pc) : [];
-const link = (c) => c === 'PB-HIB-261021-01' ? 'LotHold.dc.html' : (c === 'PB-CHM-261022-01' || c === 'PB-HIB-261022-01') ? 'LotRun.dc.html' : pages[c.slice(0, 2)];
-return {
-scanQ: raw,
-setScan: (e) => this.setState({ scanQ: e.target.value }),
-scanHit: found.length > 0,
-scanMiss: q.length >= 3 && found.length === 0,
-scanHead: pc ? prods[pc] + ' (' + pc + ') · ' + found.length + ' records' : found.length + (found.length === 1 ? ' match' : ' matches'),
-scanResults: found.slice(0, 6).map((c) => ({ code: c, kind: kinds[c.slice(0, 2)], link: link(c) })),
-scanHasMore: found.length > 6,
-scanMore: found.length > 6 ? '+ ' + (found.length - 6) + ' more. Use Stock or Trace to see them all.' : ''
-};
-}
-constructor(props) {
-super(props);
-this.state = { tab: 'stock' };
-}
-renderVals() {
-const cur = this.state.tab;
-const sups = [['Al-Nour Farm', 6, -2.08, 3], ['Wadi Green Co-op', 5, -0.54, 1], ['Sunrise Growers', 3, -0.42, 1], ['Delta Herbs', 4, 0.78, 0]];
-return {
-...this.scanVals(),
-tabs: [['stock', 'Stock'], ['yield', 'Yield by lot'], ['sup', 'Suppliers'], ['mass', 'Mass balance']].map(([k, l]) => ({ label: l, cls: k === cur ? 'tab on' : 'tab', pressed: k === cur ? 'true' : 'false', pick: () => this.setState({ tab: k }) })),
-tStock: cur === 'stock', tYield: cur === 'yield', tSup: cur === 'sup', tMass: cur === 'mass',
-sups: sups.map(([name, lots, v, alerts]) => ({
-name: name, lots: lots, alerts: alerts,
-v: (v > 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%',
-cls: v < 0 ? 'neg' : 'pos',
-negW: v < 0 ? Math.round(-v / 2.5 * 100) + '%' : '0%',
-posW: v > 0 ? Math.round(v / 2.5 * 100) + '%' : '0%'
-}))
-};
-}
-}
+/** Completed lots. Expected = raw kg × agreed rate. */
+const YIELD = [
+  { code: 'RM-MNT-261020-01', sup: 'nour', expected: 800, actual: 750 },
+  { code: 'RM-HIB-261018-02', sup: 'wadi', expected: 2040, actual: 1998 },
+  { code: 'RM-HIB-261015-01', sup: 'nour', expected: 1512, actual: 1490 },
+  { code: 'RM-CHM-261012-01', sup: 'delta', expected: 1185, actual: 1201 },
+];
+const SUPPLIERS = [['nour', 6, -2.08, 3], ['wadi', 5, -0.54, 1], ['sunrise', 3, -0.42, 1], ['delta', 4, 0.78, 0]] as const;
+/** History from before the system. Waste and unexplained loss are one figure, as they are for live lots. */
+const MASS = [
+  { code: 'RM-MNT-261020-01', input: 1000, fin: 750, by: 140, waste: 110, proc: 0 },
+  { code: 'RM-HIB-261018-02', input: 2400, fin: 1998, by: 240, waste: 162, proc: 0 },
+  { code: 'RM-CHM-261012-01', input: 1500, fin: 1201, by: 180, waste: 119, proc: 0 },
+];
 
-export default class ReportsPage extends Component {
-  template(v) {
-    return (<><style>{STYLE}</style>{" "}<div style={{"display": "flex", "flexWrap": "wrap", "minHeight": "900px", "background": "#F6F7F5"}}>{" "}<nav aria-label={"Main"} style={{"flex": "1 1 240px", "maxWidth": "280px", "background": "#FFFFFF", "borderRight": "1px solid #E3E6E1", "padding": "20px 14px", "boxSizing": "border-box", "display": "flex", "flexDirection": "column", "gap": "4px"}}>{" "}<div style={{"display": "flex", "alignItems": "center", "gap": "10px", "padding": "4px 8px 16px"}}>{" "}<div style={{"width": "36px", "height": "36px", "borderRadius": "9px", "background": "#1F6B4F", "color": "#FFFFFF", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "600", "fontSize": "16px"}}>{"M"}</div>{" "}<div style={{"fontWeight": "600", "fontSize": "16px"}}>{"Mawasem"}</div>{" "}</div>{" "}<div style={{"padding": "0 0 14px"}}><label htmlFor={"scan"} style={{"position": "absolute", "width": "1px", "height": "1px", "overflow": "hidden", "clip": "rect(0 0 0 0)"}}>{"Search by product code"}</label><div style={{"display": "flex", "alignItems": "center", "gap": "10px", "minHeight": "50px", "padding": "0 12px", "border": "1px solid #CBD2CC", "borderRadius": "10px", "background": "#F6F7F5"}}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"#3C4742"} strokeWidth={"2"} strokeLinecap={"round"} aria-hidden={"true"} style={{"flex": "none"}}><circle cx={"11"} cy={"11"} r={"6"}></circle><path d={"M20 20l-4.2-4.2"}></path></svg><input id={"scan"} type={"search"} value={v.scanQ} onChange={v.setScan} placeholder={"Product code (HIB, MNT\u2026)"} style={{"flex": "1", "minWidth": "0", "border": "0", "outline": "none", "background": "transparent", "font": "inherit", "fontSize": "14px", "minHeight": "48px", "color": "#1B2420"}} /></div>{(v.scanHit) ? (<><div style={{"marginTop": "8px", "border": "1px solid #D5E5DA", "background": "#F4F8F5", "borderRadius": "10px", "padding": "8px 10px"}}><div style={{"fontSize": "12px", "fontWeight": "600", "color": "#14503A", "marginBottom": "4px"}}>{dcTxt(v.scanHead)}</div>{(v.scanResults || []).map((r, $index) => (<React.Fragment key={$index}><a href={dcHref(r?.link)} style={{"display": "block", "padding": "5px 0", "textDecoration": "none", "color": "#1B2420", "fontSize": "12.5px"}}><span style={{"fontFamily": "'IBM Plex Mono', monospace"}}>{dcTxt(r?.code)}</span>{" "}<span style={{"color": "#5C6862"}}>{"\u00b7 "}{dcTxt(r?.kind)}</span></a></React.Fragment>))}{(v.scanHasMore) ? (<><div style={{"fontSize": "12px", "color": "#5C6862", "paddingTop": "4px"}}>{dcTxt(v.scanMore)}</div></>) : null}</div></>) : null}{(v.scanMiss) ? (<><div role={"status"} style={{"marginTop": "8px", "padding": "10px 12px", "borderRadius": "10px", "background": "#FFF4E0", "color": "#7A4700", "fontSize": "13px"}}>{"No product with that code. Try MNT, HIB or CHM"}</div></>) : null}</div>{" "}<a className={"nv"} href={dcHref("HomeQM.dc.html")}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinejoin={"round"} aria-hidden={"true"}><path d={"M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"}></path></svg>{"Home"}</a>{" "}<a className={"nv"} href={dcHref("Receive.dc.html")}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinecap={"round"} strokeLinejoin={"round"} aria-hidden={"true"}><path d={"M12 3v12M7 10l5 5 5-5M4 20h16"}></path></svg>{"Receive"}</a>{" "}<a className={"nv"} href={dcHref("Production.dc.html")}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinejoin={"round"} aria-hidden={"true"}><rect x={"3"} y={"4"} width={"5"} height={"16"} rx={"1"}></rect><rect x={"10"} y={"4"} width={"5"} height={"10"} rx={"1"}></rect><rect x={"17"} y={"4"} width={"4"} height={"13"} rx={"1"}></rect></svg>{"Production"}</a>{" "}<a className={"nv"} href={dcHref("Stock.dc.html")}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinejoin={"round"} aria-hidden={"true"}><path d={"M3 7l9-4 9 4v10l-9 4-9-4z"}></path><path d={"M3 7l9 4 9-4M12 11v10"}></path></svg>{"Stock"}</a>{" "}<a className={"nv"} href={dcHref("Shipments.dc.html")}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinejoin={"round"} aria-hidden={"true"}><path d={"M3 6h11v10H3zM14 10h4l3 3v3h-7"}></path><circle cx={"7"} cy={"18"} r={"2"}></circle><circle cx={"17"} cy={"18"} r={"2"}></circle></svg>{"Shipments"}</a>{" "}<a className={"nv"} href={dcHref("Trace.dc.html")}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} aria-hidden={"true"}><circle cx={"6"} cy={"6"} r={"2.5"}></circle><circle cx={"18"} cy={"12"} r={"2.5"}></circle><circle cx={"6"} cy={"18"} r={"2.5"}></circle><path d={"M8.5 7l7 4M8.5 17l7-4"}></path></svg>{"Trace"}</a>{" "}<a className={"nv on"} href={dcHref("Reports.dc.html")} aria-current={"page"}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinecap={"round"} aria-hidden={"true"}><path d={"M5 20V11M11 20V5M17 20v-7M3 20h18"}></path></svg>{"Reports"}</a><a className={"nv"} href={dcHref("MasterData.dc.html")}><svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinecap={"round"} strokeLinejoin={"round"} aria-hidden={"true"}><ellipse cx={"12"} cy={"6"} rx={"8"} ry={"3"}></ellipse><path d={"M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"}></path></svg>{"Master data"}</a>{" "}<div style={{"flexGrow": "1", "minHeight": "24px"}}></div>{" "}<div style={{"display": "flex", "alignItems": "center", "gap": "10px", "padding": "14px 8px 4px", "borderTop": "1px solid #E3E6E1"}}>{" "}<div style={{"width": "34px", "height": "34px", "borderRadius": "999px", "background": "#E6F0EA", "color": "#14503A", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontSize": "12px", "fontWeight": "600"}}>{"QM"}</div>{" "}<div style={{"flex": "1", "fontSize": "14px", "fontWeight": "500"}}>{"Quality manager"}</div>{" "}{" "}</div>{" "}</nav>{" "}<main style={{"flex": "999 1 560px", "minWidth": "0", "padding": "32px 36px 48px", "boxSizing": "border-box"}}>{" "}<div style={{"maxWidth": "1100px", "margin": "0 auto", "display": "flex", "flexDirection": "column", "gap": "20px"}}>{" "}<header style={{"display": "flex", "flexWrap": "wrap", "gap": "16px", "alignItems": "flex-end", "justifyContent": "space-between"}}>{" "}<div><h1 style={{"margin": "0", "fontSize": "30px", "fontWeight": "600"}}>{"Reports"}</h1><div style={{"fontSize": "15px", "color": "#5C6862", "marginTop": "4px"}}>{"Last 90 days \u00b7 all products"}</div></div>{" "}<button className={"btn"} type={"button"}>{"Export to Excel"}</button>{" "}</header>{" "}<section className={"card"} style={{"minWidth": "0"}}>{" "}<div role={"group"} aria-label={"Report"} style={{"display": "flex", "flexWrap": "wrap", "padding": "0 22px", "borderBottom": "1px solid #E3E6E1"}}>{" "}{(v.tabs || []).map((t, $index) => (<React.Fragment key={$index}><button type={"button"} className={t?.cls} aria-pressed={t?.pressed} onClick={t?.pick}>{dcTxt(t?.label)}</button></React.Fragment>))}{" "}</div>{" "}{(v.tStock) ? (<>{" "}<div style={{"padding": "22px", "display": "flex", "flexWrap": "wrap", "gap": "24px"}}>{" "}<div style={{"flex": "1 1 160px"}}><div style={{"fontSize": "14px", "color": "#5C6862"}}>{"Raw material"}</div><div className={"big"}>{"12,480 kg"}</div></div>{" "}<div style={{"flex": "1 1 160px"}}><div style={{"fontSize": "14px", "color": "#5C6862"}}>{"In production"}</div><div className={"big"}>{"3,150 kg"}</div></div>{" "}<div style={{"flex": "1 1 160px"}}><div style={{"fontSize": "14px", "color": "#5C6862"}}>{"Finished goods"}</div><div className={"big"}>{"9,860 kg"}</div></div>{" "}</div>{" "}<div style={{"overflowX": "auto"}}><div style={{"minWidth": "640px"}}>{" "}<div className={"rh"}><span className={"c w2"}>{"Product"}</span><span className={"c r"}>{"Raw kg"}</span><span className={"c r"}>{"In production kg"}</span><span className={"c r"}>{"Finished kg"}</span></div>{" "}<div className={"rw"}><span className={"c w2"}>{"Mint"}</span><span className={"c r"}>{"500"}</span><span className={"c r"}>{"0"}</span><span className={"c r"}>{"1,950"}</span></div>{" "}<div className={"rw"}><span className={"c w2"}>{"Hibiscus"}</span><span className={"c r"}>{"6,780"}</span><span className={"c r"}>{"2,105"}</span><span className={"c r"}>{"5,410"}</span></div>{" "}<div className={"rw"}><span className={"c w2"}>{"Chamomile"}</span><span className={"c r"}>{"5,200"}</span><span className={"c r"}>{"1,045"}</span><span className={"c r"}>{"2,500"}</span></div>{" "}</div></div>{" "}</>) : null}{" "}{(v.tYield) ? (<>{" "}<div style={{"overflowX": "auto"}}><div style={{"minWidth": "760px"}}>{" "}<div className={"rh"}><span className={"c w2"}>{"Raw lot"}</span><span className={"c"}>{"Supplier"}</span><span className={"c r"}>{"Expected kg"}</span><span className={"c r"}>{"Actual kg"}</span><span className={"c r"}>{"Variance"}</span><span className={"c"}>{"Alert"}</span></div>{" "}<a className={"rw"} href={dcHref("Lot.dc.html")}><span className={"c w2 mono"} style={{"fontSize": "14px"}}>{"RM-MNT-261020-01"}</span><span className={"c"}>{"Al-Nour Farm"}</span><span className={"c r"}>{"800"}</span><span className={"c r"}>{"750"}</span><span className={"c r neg"}>{"\u22126.25%"}</span><span className={"c"}><span className={"badge bad"}>{"Open"}</span></span></a>{" "}<a className={"rw"} href={dcHref("Lot.dc.html")}><span className={"c w2 mono"} style={{"fontSize": "14px"}}>{"RM-HIB-261018-02"}</span><span className={"c"}>{"Wadi Green Co-op"}</span><span className={"c r"}>{"2,040"}</span><span className={"c r"}>{"1,998"}</span><span className={"c r neg"}>{"\u22122.06%"}</span><span className={"c"}><span className={"badge bad"}>{"Open"}</span></span></a>{" "}<a className={"rw"} href={dcHref("Lot.dc.html")}><span className={"c w2 mono"} style={{"fontSize": "14px"}}>{"RM-HIB-261015-01"}</span><span className={"c"}>{"Al-Nour Farm"}</span><span className={"c r"}>{"1,512"}</span><span className={"c r"}>{"1,490"}</span><span className={"c r neg"}>{"\u22121.46%"}</span><span className={"c"}><span className={"badge mute"}>{"Reviewed"}</span></span></a>{" "}<a className={"rw"} href={dcHref("Lot.dc.html")}><span className={"c w2 mono"} style={{"fontSize": "14px"}}>{"RM-CHM-261012-01"}</span><span className={"c"}>{"Delta Herbs"}</span><span className={"c r"}>{"1,185"}</span><span className={"c r"}>{"1,201"}</span><span className={"c r pos"}>{"+1.35%"}</span><span className={"c"} style={{"color": "#5C6862", "fontSize": "14px"}}>{"None"}</span></a>{" "}</div></div>{" "}</>) : null}{" "}{(v.tSup) ? (<>{" "}<div style={{"padding": "16px 22px 0", "fontSize": "14px", "color": "#5C6862"}}>{"Actual against agreed yield, all completed lots. Click a supplier to open it."}</div>{" "}<div style={{"overflowX": "auto", "marginTop": "10px"}}><div style={{"minWidth": "720px"}}>{" "}<div className={"rh"}><span className={"c w2"}>{"Supplier"}</span><span className={"c r"}>{"Lots"}</span><span className={"c"} style={{"flex": "2 1 0"}}>{"Variance"}</span><span className={"c r"}>{"Alerts"}</span></div>{" "}{(v.sups || []).map((u, $index) => (<React.Fragment key={$index}>{" "}<a className={"rw"} href={dcHref("Supplier.dc.html")}><span className={"c w2"} style={{"fontWeight": "600"}}>{dcTxt(u?.name)}</span><span className={"c r"}>{dcTxt(u?.lots)}</span><span className={"c"} style={{"flex": "2 1 0", "display": "flex", "alignItems": "center", "gap": "10px"}}><span style={{"flex": "1", "display": "flex", "height": "14px"}}><span style={{"flex": "1", "display": "flex", "justifyContent": "flex-end", "borderRight": "1px solid #8A958F"}}><span style={dcCss("height: 14px; width: " + dcStr(u?.negW) + "; background: #C8372D; border-radius: 3px 0 0 3px")}></span></span><span style={{"flex": "1"}}><span style={dcCss("display: block; height: 14px; width: " + dcStr(u?.posW) + "; background: #1F6B4F; border-radius: 0 3px 3px 0")}></span></span></span><span className={u?.cls} style={{"width": "64px", "textAlign": "right"}}>{dcTxt(u?.v)}</span></span><span className={"c r"}>{dcTxt(u?.alerts)}</span></a>{" "}</React.Fragment>))}{" "}</div></div>{" "}</>) : null}{" "}{(v.tMass) ? (<>{" "}<div style={{"overflowX": "auto"}}><div style={{"minWidth": "760px"}}>{" "}<div className={"rh"}><span className={"c w2"}>{"Raw lot"}</span><span className={"c r"}>{"Input"}</span><span className={"c r"}>{"Finished"}</span><span className={"c r"}>{"By-products"}</span><span className={"c r"}>{"Waste"}</span><span className={"c r"}>{"Unexplained"}</span></div>{" "}<a className={"rw"} href={dcHref("Lot.dc.html")}><span className={"c w2 mono"} style={{"fontSize": "14px"}}>{"RM-MNT-261020-01"}</span><span className={"c r"}>{"1,000"}</span><span className={"c r"}>{"750"}</span><span className={"c r"}>{"140"}</span><span className={"c r"}>{"85"}</span><span className={"c r neg"}>{"25 kg"}</span></a>{" "}<a className={"rw"} href={dcHref("Lot.dc.html")}><span className={"c w2 mono"} style={{"fontSize": "14px"}}>{"RM-HIB-261018-02"}</span><span className={"c r"}>{"2,400"}</span><span className={"c r"}>{"1,998"}</span><span className={"c r"}>{"240"}</span><span className={"c r"}>{"150"}</span><span className={"c r neg"}>{"12 kg"}</span></a>{" "}<a className={"rw"} href={dcHref("Lot.dc.html")}><span className={"c w2 mono"} style={{"fontSize": "14px"}}>{"RM-CHM-261012-01"}</span><span className={"c r"}>{"1,500"}</span><span className={"c r"}>{"1,201"}</span><span className={"c r"}>{"180"}</span><span className={"c r"}>{"104"}</span><span className={"c r neg"}>{"15 kg"}</span></a>{" "}</div></div>{" "}</>) : null}{" "}</section>{" "}</div>{" "}</main>{" "}</div>{" "}</>);
+/** The quality manager's reports. Open yield alerts are on the Approvals page. */
+export default function Reports() {
+  const { t, x, role } = useApp();
+  const { raws, batches, fins, alerts, products, audit, threshold, suppliers } = useStore();
+  const { prodL, supL } = useNames();
+  const [tab, setTab] = useState<Tab>('stock');
+
+  if (role !== 'qm') {
+    return <Shell active="Reports" title={t('Reports', 'التقارير')}><div className="m-note warn">{t('Reports are for the quality manager. Switch role to continue.', 'التقارير لمدير الجودة. بدّل الدور للمتابعة.')}</div></Shell>;
   }
+
+  const stockRows = products.map((o) => o.id).map((pc) => ({
+    name: prodL(pc),
+    raw: raws.filter((r) => r.pc === pc && (r.status === 'wait' || r.status === 'ready')).reduce((s, r) => s + r.kg, 0),
+    proc: batches.filter((b) => b.pc === pc && !b.closed).reduce((s, b) => s + b.kg, 0),
+    fin: fins.filter((f) => f.pc === pc).reduce((s, f) => s + f.kg, 0),
+  }));
+  const sums = raws.map((r) => ({ r, s: rawSummary(r, batches) }));
+  const liveDone = sums.filter((o) => o.s.complete);
+  const liveCodes = new Set(sums.filter((o) => o.s.started).map((o) => o.r.id));
+  const alertFor = (code: string): { label: L; tone: string } => {
+    const a = alerts.find((o) => o.code === code);
+    return !a ? { label: l('None', 'لا يوجد'), tone: '' } : a.reviewed ? { label: l('Reviewed', 'تمت المراجعة'), tone: 'mute' } : { label: l('Open', 'مفتوح'), tone: 'bad' };
+  };
+
+  // each tab describes itself once; the table and the Excel export both read from it
+  const kgH = t('kg', 'كجم');
+  const sheets: Record<Tab, { head: string[]; rows: { cells: (string | React.ReactNode)[]; csv: string[]; tone?: string[] }[]; note?: string }> = {
+    audit: {
+      head: [t('When', 'الوقت'), t('What', 'ماذا'), t('Who', 'من')],
+      rows: audit.map((a) => ({
+        cells: [a.when, <span>{x(a.what)}{a.reason ? <div className="m-muted" style={{ fontSize: 13 }}>{t('Reason', 'السبب')}: {x(a.reason)}</div> : null}</span>, a.who === 'QM' ? t('Quality manager', 'مدير الجودة') : a.who === 'IM' ? t('Inventory manager', 'مدير المخزون') : t('System', 'النظام')],
+        csv: [a.when, x(a.what) + (a.reason ? ' (' + x(a.reason) + ')' : ''), a.who],
+      })),
+      note: t('Every create, edit and approval, with user and time.', 'كل إنشاء وتعديل واعتماد، مع المستخدم والوقت.'),
+    },
+    stock: {
+      head: [t('Product', 'المنتج'), t('Raw', 'الخام') + ' ' + kgH, t('In production', 'قيد التشغيل') + ' ' + kgH, t('Finished', 'النهائي') + ' ' + kgH],
+      rows: stockRows.map((r) => ({ cells: [x(r.name), fmt(r.raw), fmt(r.proc), fmt(r.fin)], csv: [x(r.name), String(r.raw), String(r.proc), String(r.fin)] })),
+      note: t('Live stock from the lots in the system. Approved and waiting raw lots are counted as raw.', 'المخزون الحالي من الدفعات في النظام. تُحسب الدفعات الخام المعتمدة وتلك بانتظار الاعتماد ضمن الخام.'),
+    },
+    yield: {
+      head: [t('Raw lot', 'الدفعة الخام'), t('Supplier', 'المورد'), t('Expected', 'المتوقع') + ' ' + kgH, t('Actual', 'الفعلي') + ' ' + kgH, t('Variance', 'الفرق'), t('Alert', 'التنبيه')],
+      rows: [
+        ...liveDone.map((o) => ({ code: o.r.id, sup: o.r.supplier, expected: o.s.expected, actual: o.s.fin })),
+        ...YIELD.filter((r) => !liveDone.some((o) => o.r.id === r.code)),
+      ].map((r) => {
+        const v = ((r.actual - r.expected) / r.expected) * 100;
+        const a = alertFor(r.code);
+        return {
+          cells: [<a className="mono" href={`#/Lot?code=${r.code}`}>{r.code}</a>, x(supL(r.sup)), fmt(r.expected), fmt(r.actual), <span style={{ color: -v > threshold ? '#A41E14' : '#14503A' }}>{pct(v)}</span>, a.tone ? <span className={'m-badge ' + a.tone}>{x(a.label)}</span> : x(a.label)],
+          csv: [r.code, x(supL(r.sup)), String(r.expected), String(r.actual), pct(v), x(a.label)],
+        };
+      }),
+      note: t('Actual against agreed yield, all completed lots. A negative variance raises an alert.', 'الفعلي مقابل الإنتاجية المتفق عليها لكل الدفعات المكتملة. الفرق السالب يرفع تنبيهاً.'),
+    },
+    sup: {
+      head: [t('Supplier', 'المورد'), t('Lots', 'الدفعات'), t('Average variance', 'متوسط الفرق'), t('Alerts', 'التنبيهات')],
+      rows: suppliers.map((sp) => {
+        const h = SUPPLIERS.find((q) => q[0] === sp.id);
+        const mine = liveDone.filter((o) => o.r.supplier === sp.id);
+        const lots = (h ? h[1] : 0) + mine.length;
+        const avg = lots ? ((h ? h[1] * h[2] : 0) + mine.reduce((a, o) => a + o.s.pct, 0)) / lots : 0;
+        const al = (h ? h[3] : 0) + alerts.filter((a) => mine.some((o) => o.r.id === a.code)).length;
+        return {
+          cells: [x(supL(sp.id)), String(lots), lots ? <span style={{ color: -avg > threshold ? '#A41E14' : '#14503A', fontWeight: 600 }}>{pct(avg)}</span> : '—', String(al)],
+          csv: [x(supL(sp.id)), String(lots), lots ? pct(avg) : '', String(al)],
+        };
+      }),
+      note: t('Yield history per supplier: average of actual against agreed yield.', 'سجل الإنتاجية لكل مورد: متوسط الفعلي مقابل المتفق عليه.'),
+    },
+    mass: {
+      head: [t('Raw lot', 'الدفعة الخام'), t('Input', 'الداخل'), t('Finished', 'النهائي'), t('By-products', 'المنتجات الثانوية'), t('Waste and loss', 'فاقد وهدر'), t('In process or stock', 'قيد التشغيل أو المخزون')],
+      rows: [
+        ...sums.filter((o) => o.s.started).map((o) => ({ code: o.r.id, input: o.r.kg, fin: o.s.fin, by: o.s.by, waste: o.s.waste, proc: Math.round((o.s.proc + o.s.stock) * 10) / 10 })),
+        ...MASS.filter((r) => !liveCodes.has(r.code)),
+      ].map((r) => ({
+        cells: [<a className="mono" href={`#/Lot?code=${r.code}`}>{r.code}</a>, fmt(r.input), fmt(r.fin), fmt(r.by), fmt(r.waste), fmt(r.proc)],
+        csv: [r.code, String(r.input), String(r.fin), String(r.by), String(r.waste), String(r.proc)],
+      })),
+      note: t('Input = finished + by-products + waste and loss + what is still in process or stock. Only kg out and by-product are recorded per step, so waste and unexplained loss are one figure.', 'الداخل = النهائي + المنتجات الثانوية + الفاقد والهدر + ما لا يزال قيد التشغيل أو في المخزون. يُسجَّل لكل مرحلة الخارج والمنتج الثانوي فقط، لذا يظهر الفاقد والهدر غير المفسَّر كرقم واحد.'),
+    },
+  };
+  const sheet = sheets[tab];
+
+  const exportCsv = () => {
+    const csv = '﻿' + [sheet.head, ...sheet.rows.map((r) => r.csv)].map((r) => r.map((c) => '"' + c.replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const el = document.createElement('a');
+    el.href = url; el.download = `report-${tab}.csv`; el.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const tabs: [Tab, string][] = [['stock', t('Stock', 'المخزون')], ['yield', t('Yield by lot', 'الإنتاجية لكل دفعة')], ['sup', t('Suppliers', 'الموردون')], ['mass', t('Mass balance', 'ميزان الكتلة')], ['audit', t('Audit log', 'سجل التدقيق')]];
+
+  return (
+    <Shell
+      active="Reports"
+      title={t('Reports', 'التقارير')}
+      subtitle={t('Open alerts are on the Approvals page.', 'التنبيهات المفتوحة في صفحة الاعتمادات.')}
+      actions={<button type="button" className="m-btn" onClick={exportCsv}>{t('Export to Excel', 'تصدير إلى إكسل')}</button>}
+    >
+      <section className="m-card">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '16px 22px' }} role="group" aria-label={t('Report', 'التقرير')}>
+          {tabs.map(([k, label]) => <button key={k} type="button" className={'m-btn sm' + (tab === k ? ' pri' : '')} aria-pressed={tab === k} onClick={() => setTab(k)}>{label}</button>)}
+        </div>
+        <div className="m-tbl"><div>
+          <div className="m-tr h">
+            {sheet.head.map((h, i) => <span key={i} className={'m-td' + (i === 0 ? ' w' : tab !== 'audit' && (i > 1 || tab === 'stock' || tab === 'mass') ? ' n' : tab === 'audit' && i === 1 ? ' w' : '')}>{h}</span>)}
+          </div>
+          {sheet.rows.map((r, ri) => (
+            <div key={ri} className="m-tr">
+              {r.cells.map((c, i) => <span key={i} className={'m-td' + (i === 0 ? ' w' : tab !== 'audit' && (i > 1 || tab === 'stock' || tab === 'mass') && !(tab === 'yield' && i === 5) ? ' n' : '')}>{c}</span>)}
+            </div>
+          ))}
+        </div></div>
+        {sheet.note ? <div className="m-pad m-muted" style={{ fontSize: 13, paddingTop: 12 }}>{sheet.note}</div> : null}
+      </section>
+    </Shell>
+  );
 }
